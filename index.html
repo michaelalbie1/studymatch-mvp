@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyMatch — Reichman University</title>
+  <style>
+    :root {
+      --primary: #003087;
+      --accent:  #C9A84C;
+      --bg:      #f4f6fa;
+      --card:    #ffffff;
+      --text:    #1a1a2e;
+      --muted:   #6b7280;
+      --border:  #e5e7eb;
+      --danger:  #dc2626;
+      --success: #16a34a;
+      --radius:  12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+      padding-bottom: 80px;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      background: var(--primary);
+      color: #fff;
+      padding: 16px 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .topbar .logo { font-size: 20px; font-weight: 800; letter-spacing: -.5px; }
+    .topbar .logo span { color: var(--accent); }
+    .topbar .user-pill {
+      background: rgba(255,255,255,.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .topbar .user-pill:hover { background: rgba(255,255,255,.25); }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      padding: 10px 4px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 11px;
+      transition: color .2s;
+      border: none;
+      background: none;
+    }
+    .nav-item.active { color: var(--primary); }
+    .nav-item svg { width: 22px; height: 22px; }
+
+    /* ── SCREENS ── */
+    .screen { display: none; padding: 0 0 16px; }
+    .screen.active { display: block; }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      padding: 20px 20px 12px;
+    }
+    .section-header h2 { font-size: 22px; font-weight: 800; }
+    .section-header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin: 0 16px 12px;
+    }
+    .card-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-primary  { background: rgba(0,48,135,.1); color: var(--primary); }
+    .badge-accent   { background: rgba(201,168,76,.15); color: #92620a; }
+    .badge-green    { background: rgba(22,163,74,.1); color: var(--success); }
+    .badge-red      { background: rgba(220,38,38,.1); color: var(--danger); }
+    .badge-gray     { background: #f3f4f6; color: var(--muted); }
+
+    .card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .card-sub   { font-size: 13px; color: var(--muted); }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .card-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+    }
+    .card-name-date { font-size: 12px; color: var(--muted); }
+    .card-name-date strong { color: var(--text); font-size: 13px; display: block; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { opacity: .9; }
+    .btn-accent  { background: var(--accent); color: #fff; }
+    .btn-accent:hover { opacity: .9; }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+    }
+    .btn-outline:hover { background: rgba(0,48,135,.06); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-sm { padding: 7px 14px; font-size: 13px; }
+    .btn-full { width: 100%; }
+
+    /* ── HOME SCREEN ── */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #00449e 100%);
+      color: #fff;
+      padding: 32px 20px 36px;
+      text-align: center;
+    }
+    .hero-logo { font-size: 40px; font-weight: 900; letter-spacing: -1px; }
+    .hero-logo span { color: var(--accent); }
+    .hero-sub { font-size: 15px; opacity: .85; margin-top: 6px; }
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      margin-top: -24px;
+    }
+    .stat-card {
+      flex: 1;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+      border: 1px solid var(--border);
+    }
+    .stat-num { font-size: 28px; font-weight: 900; color: var(--primary); }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 0 16px 16px;
+    }
+    .cta-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .cta-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(0,48,135,.1); }
+    .cta-icon { font-size: 32px; margin-bottom: 8px; }
+    .cta-card h3 { font-size: 14px; font-weight: 700; color: var(--primary); }
+    .cta-card p  { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-btn {
+      white-space: nowrap;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .filter-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .search-bar {
+      margin: 0 16px 8px;
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 10px 16px 10px 40px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .search-bar input:focus { border-color: var(--primary); }
+    .search-bar svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--muted);
+    }
+
+    /* ── FORM ── */
+    .form-wrap { padding: 0 16px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .form-group label .req { color: var(--danger); }
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      font-size: 14px;
+      background: var(--card);
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+    }
+    .form-control:focus { border-color: var(--primary); }
+    textarea.form-control { min-height: 80px; resize: vertical; }
+    select.form-control { cursor: pointer; }
+
+    /* ── DETAIL SCREEN ── */
+    .detail-hero {
+      background: var(--primary);
+      color: #fff;
+      padding: 24px 20px 20px;
+    }
+    .detail-subject {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .detail-posted { font-size: 13px; opacity: .75; margin-top: 4px; }
+    .detail-body { padding: 16px; }
+    .detail-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-icon {
+      width: 36px; height: 36px;
+      background: rgba(0,48,135,.08);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+    .detail-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .detail-value { font-size: 15px; font-weight: 600; margin-top: 2px; }
+
+    .responses-section { padding: 0 16px 16px; }
+    .responses-section h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      padding-top: 4px;
+    }
+    .response-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .response-name { font-weight: 700; font-size: 14px; }
+    .response-msg  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty h3 { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .empty p  { font-size: 14px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1a1a2e;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity .3s, transform .3s;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--card);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 40px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .modal h2 { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
+
+    /* ── USER SETUP ── */
+    .user-setup {
+      position: fixed;
+      inset: 0;
+      background: var(--primary);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      color: #fff;
+    }
+    .user-setup.hidden { display: none; }
+    .user-setup h1 { font-size: 36px; font-weight: 900; letter-spacing: -1px; }
+    .user-setup h1 span { color: var(--accent); }
+    .user-setup p { opacity: .8; font-size: 15px; margin: 8px 0 32px; }
+    .user-setup .form-control {
+      background: rgba(255,255,255,.15);
+      border-color: rgba(255,255,255,.3);
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .user-setup .form-control::placeholder { color: rgba(255,255,255,.5); }
+    .user-setup .form-control:focus { border-color: var(--accent); }
+
+    /* ── MISC ── */
+    .divider { height: 1px; background: var(--border); margin: 4px 16px; }
+    .no-results { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- USER SETUP SCREEN -->
+<div class="user-setup" id="userSetup">
+  <h1>Study<span>Match</span></h1>
+  <p>Find your perfect study partner at Reichman University</p>
+  <input class="form-control" id="setupName" type="text" placeholder="Your full name" />
+  <input class="form-control" id="setupEmail" type="email" placeholder="Your university email" />
+  <br/>
+  <button class="btn btn-accent btn-full" onclick="setupUser()">Get Started →</button>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">Study<span>Match</span></div>
+  <div class="user-pill" onclick="showUserSetup()" id="userPill">👤 Sign in</div>
+</div>
+
+<!-- SCREENS -->
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <div class="hero">
+    <div class="hero-logo">Study<span>Match</span></div>
+    <div class="hero-sub">Reichman University · Peer Study Network</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="statOpen">—</div>
+      <div class="stat-label">Open Requests</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statTotal">—</div>
+      <div class="stat-label">Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statSubjects">—</div>
+      <div class="stat-label">Subjects</div>
+    </div>
+  </div>
+  <div class="section-header">
+    <h2>What would you like to do?</h2>
+  </div>
+  <div class="cta-grid">
+    <div class="cta-card" onclick="switchScreen('browse')">
+      <div class="cta-icon">🔍</div>
+      <h3>Browse Requests</h3>
+      <p>Find a study partner now</p>
+    </div>
+    <div class="cta-card" onclick="switchScreen('post')">
+      <div class="cta-icon">✏️</div>
+      <h3>Post a Request</h3>
+      <p>Share your availability</p>
+    </div>
+    <div class="cta-card" onclick="switchScreen('mine')">
+      <div class="cta-icon">📋</div>
+      <h3>My Requests</h3>
+      <p>Manage your posts</p>
+    </div>
+    <div class="cta-card" onclick="switchScreen('browse')">
+      <div class="cta-icon">💬</div>
+      <h3>Join a Group</h3>
+      <p>Respond to a request</p>
+    </div>
+  </div>
+  <div class="section-header">
+    <h2>Recent Requests</h2>
+  </div>
+  <div id="homeRecent"></div>
+</div>
+
+<!-- BROWSE -->
+<div class="screen" id="screen-browse">
+  <div class="section-header">
+    <h2>Browse Requests</h2>
+    <p>Find your perfect study partner</p>
+  </div>
+  <div class="search-bar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    </svg>
+    <input type="text" id="searchInput" placeholder="Search by subject…" oninput="renderBrowse()" />
+  </div>
+  <div class="filter-bar" id="locationFilters"></div>
+  <div id="browseList"></div>
+</div>
+
+<!-- POST -->
+<div class="screen" id="screen-post">
+  <div class="section-header">
+    <h2>Post a Request</h2>
+    <p>Let others know you're looking</p>
+  </div>
+  <div class="form-wrap">
+    <div class="form-group">
+      <label>Subject / Course <span class="req">*</span></label>
+      <input class="form-control" id="fSubject" placeholder="e.g. Statistics, OOP, Marketing…" />
+    </div>
+    <div class="form-group">
+      <label>Availability <span class="req">*</span></label>
+      <input class="form-control" id="fAvailability" placeholder="e.g. Mon 14:00-16:00, Weekdays evenings…" />
+    </div>
+    <div class="form-group">
+      <label>Study Style</label>
+      <select class="form-control" id="fStyle">
+        <option value="Group">Group (3+ students)</option>
+        <option value="Individual">Individual (1-on-1)</option>
+        <option value="Either">Either works for me</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Location Preference</label>
+      <select class="form-control" id="fLocation">
+        <option value="Library">Library</option>
+        <option value="Campus Lounge">Campus Lounge</option>
+        <option value="Online">Online (Zoom/Teams)</option>
+        <option value="Flexible">Flexible</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea class="form-control" id="fNotes" placeholder="Anything else to share? e.g. midterm prep, specific topics…"></textarea>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="submitRequest()">Post Request 🚀</button>
+    <br/><br/>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div class="screen" id="screen-detail">
+  <div id="detailContent"></div>
+</div>
+
+<!-- MY REQUESTS -->
+<div class="screen" id="screen-mine">
+  <div class="section-header">
+    <h2>My Requests</h2>
+    <p>Posts you've submitted</p>
+  </div>
+  <div id="mineList"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-home" onclick="switchScreen('home')">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+    </svg>
+    Home
+  </button>
+  <button class="nav-item" id="nav-browse" onclick="switchScreen('browse')">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    </svg>
+    Browse
+  </button>
+  <button class="nav-item" id="nav-post" onclick="switchScreen('post')">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    Post
+  </button>
+  <button class="nav-item" id="nav-mine" onclick="switchScreen('mine')">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+    </svg>
+    Mine
+  </button>
+</nav>
+
+<!-- JOIN MODAL -->
+<div class="modal-overlay hidden" id="joinModal">
+  <div class="modal">
+    <h2>Join This Study Group</h2>
+    <div class="form-group">
+      <label>Your Message</label>
+      <textarea class="form-control" id="joinMessage" placeholder="Introduce yourself — your year, what you want to study, your schedule…"></textarea>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="submitJoin()">Send Request 📩</button>
+    <br/><br/>
+    <button class="btn btn-outline btn-full" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const SEED = [
+  { id:'r1', name:'Alice Cohen',   email:'alice@reichman.ac.il', subject:'Statistics',         availability:'Mon 14:00-16:00', studyStyle:'Group',      location:'Library',       notes:'Midterm prep — chapters 4-8', status:'Open',   timestamp: Date.now()-5*86400000 },
+  { id:'r2', name:'Ben Levi',      email:'ben@reichman.ac.il',   subject:'OOP (Java)',          availability:'Wed 16:00-18:00', studyStyle:'Either',     location:'Online',        notes:'Java assignments help',         status:'Open',   timestamp: Date.now()-4*86400000 },
+  { id:'r3', name:'Maya Stern',    email:'maya@reichman.ac.il',  subject:'Marketing Strategy', availability:'Thu 13:00-15:00', studyStyle:'Group',      location:'Campus Lounge', notes:'Case study preparation',        status:'Open',   timestamp: Date.now()-3*86400000 },
+  { id:'r4', name:'Noa Shapiro',   email:'noa@reichman.ac.il',   subject:'Data Structures',    availability:'Tue 10:00-12:00', studyStyle:'Individual', location:'Library',       notes:'Exam review',                   status:'Open',   timestamp: Date.now()-2*86400000 },
+  { id:'r5', name:'Yair Mizrahi',  email:'yair@reichman.ac.il',  subject:'Calculus II',        availability:'Sun 09:00-11:00', studyStyle:'Group',      location:'Flexible',      notes:'Weekly review sessions',        status:'Filled', timestamp: Date.now()-1*86400000 },
+  { id:'r6', name:'Shira Katz',    email:'shira@reichman.ac.il', subject:'Business Law',       availability:'Fri 11:00-13:00', studyStyle:'Group',      location:'Library',       notes:'Contract law focus',            status:'Open',   timestamp: Date.now()-1*86400000 },
+];
+
+function loadData(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
+}
+function saveData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+function getRequests() { return loadData('sm_requests', SEED); }
+function setRequests(r) { saveData('sm_requests', r); }
+function getResponses() { return loadData('sm_responses', []); }
+function setResponses(r) { saveData('sm_responses', r); }
+function getCurrentUser() { return loadData('sm_user', null); }
+function setCurrentUser(u) { saveData('sm_user', u); }
+
+// Init seed
+if (!localStorage.getItem('sm_requests')) setRequests(SEED);
+
+let currentDetailId = null;
+let activeLocationFilter = 'All';
+
+// ── USER ──────────────────────────────────────────────────────────────────────
+function setupUser() {
+  const name  = document.getElementById('setupName').value.trim();
+  const email = document.getElementById('setupEmail').value.trim();
+  if (!name || !email) { showToast('Please enter your name and email'); return; }
+  setCurrentUser({ name, email });
+  document.getElementById('userSetup').classList.add('hidden');
+  document.getElementById('userPill').textContent = '👤 ' + name.split(' ')[0];
+  renderAll();
+  showToast('Welcome, ' + name.split(' ')[0] + '! 🎉');
+}
+function showUserSetup() {
+  document.getElementById('userSetup').classList.remove('hidden');
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  const navEl = document.getElementById('nav-' + id);
+  if (navEl) navEl.classList.add('active');
+  if (id === 'home')   renderHome();
+  if (id === 'browse') renderBrowse();
+  if (id === 'mine')   renderMine();
+}
+
+// ── RENDER HOME ───────────────────────────────────────────────────────────────
+function renderHome() {
+  const reqs = getRequests();
+  const open = reqs.filter(r => r.status === 'Open');
+  const subjects = [...new Set(reqs.map(r => r.subject))];
+  document.getElementById('statOpen').textContent     = open.length;
+  document.getElementById('statTotal').textContent    = [...new Set(reqs.map(r => r.email))].length;
+  document.getElementById('statSubjects').textContent = subjects.length;
+
+  const recent = open.slice(0, 3);
+  const container = document.getElementById('homeRecent');
+  container.innerHTML = recent.length
+    ? recent.map(r => requestCard(r, true)).join('')
+    : '<div class="no-results">No open requests yet. Be the first!</div>';
+}
+
+// ── RENDER BROWSE ─────────────────────────────────────────────────────────────
+function renderBrowse() {
+  const reqs = getRequests().filter(r => r.status === 'Open');
+  const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+
+  // Location filters
+  const locations = ['All', ...new Set(reqs.map(r => r.location))];
+  document.getElementById('locationFilters').innerHTML = locations.map(l =>
+    `<button class="filter-btn ${l === activeLocationFilter ? 'active' : ''}"
+      onclick="setLocationFilter('${l}')">${l}</button>`
+  ).join('');
+
+  let filtered = reqs;
+  if (search) filtered = filtered.filter(r =>
+    r.subject.toLowerCase().includes(search) ||
+    r.name.toLowerCase().includes(search) ||
+    r.notes.toLowerCase().includes(search)
+  );
+  if (activeLocationFilter !== 'All')
+    filtered = filtered.filter(r => r.location === activeLocationFilter);
+
+  const list = document.getElementById('browseList');
+  list.innerHTML = filtered.length
+    ? filtered.map(r => requestCard(r, true)).join('')
+    : '<div class="no-results">No requests match your filters.</div>';
+}
+
+function setLocationFilter(loc) {
+  activeLocationFilter = loc;
+  renderBrowse();
+}
+
+// ── RENDER MINE ───────────────────────────────────────────────────────────────
+function renderMine() {
+  const user = getCurrentUser();
+  const list = document.getElementById('mineList');
+  if (!user) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">👤</div><h3>Not signed in</h3><p>Set up your profile to manage your requests.</p></div>';
+    return;
+  }
+  const mine = getRequests().filter(r => r.email === user.email);
+  if (!mine.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><h3>No requests yet</h3><p>Post your first study request!</p></div>
+      <div style="padding:0 16px"><button class="btn btn-primary btn-full" onclick="switchScreen('post')">Post a Request ✏️</button></div>`;
+    return;
+  }
+  list.innerHTML = mine.map(r => requestCard(r, false, true)).join('');
+}
+
+// ── REQUEST CARD ──────────────────────────────────────────────────────────────
+function requestCard(r, clickable, showActions) {
+  const responses = getResponses().filter(x => x.requestId === r.id);
+  const initials = r.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+  const age = timeAgo(r.timestamp);
+  const statusBadge = r.status === 'Open'
+    ? '<span class="badge badge-green">● Open</span>'
+    : '<span class="badge badge-red">✓ Filled</span>';
+  const actions = showActions && r.status === 'Open'
+    ? `<br/><button class="btn btn-sm btn-success" onclick="markFilled('${r.id}')">✓ Mark as Filled</button>
+       <button class="btn btn-sm btn-danger" style="margin-left:8px" onclick="deleteRequest('${r.id}')">Delete</button>`
+    : '';
+  return `
+    <div class="card" ${clickable ? `onclick="showDetail('${r.id}')" style="cursor:pointer"` : ''}>
+      <div class="card-meta">
+        <span class="badge badge-primary">📚 ${r.subject}</span>
+        <span class="badge badge-accent">📍 ${r.location}</span>
+        ${statusBadge}
+      </div>
+      <div class="card-title">${r.subject}</div>
+      <div class="card-sub">🕐 ${r.availability} &nbsp;·&nbsp; 👥 ${r.studyStyle}</div>
+      ${r.notes ? `<div class="card-sub" style="margin-top:4px;font-style:italic">"${r.notes}"</div>` : ''}
+      <div class="card-footer">
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="card-avatar">${initials}</div>
+          <div class="card-name-date">
+            <strong>${r.name}</strong>
+            ${age} · ${responses.length} response${responses.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+        ${clickable ? '<span style="color:var(--muted);font-size:20px">›</span>' : ''}
+      </div>
+      ${actions}
+    </div>`;
+}
+
+// ── DETAIL ────────────────────────────────────────────────────────────────────
+function showDetail(id) {
+  currentDetailId = id;
+  const r = getRequests().find(x => x.id === id);
+  const responses = getResponses().filter(x => x.requestId === id);
+  const user = getCurrentUser();
+  const isOwner = user && user.email === r.email;
+
+  const responsesHtml = responses.length
+    ? responses.map(x => `
+        <div class="response-item">
+          <div class="response-name">${x.responderName}</div>
+          <div class="response-msg">${x.message}</div>
+        </div>`).join('')
+    : '<p style="color:var(--muted);font-size:14px">No responses yet — be the first!</p>';
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-hero">
+      <div style="margin-bottom:8px">
+        ${r.status === 'Open'
+          ? '<span class="badge badge-green" style="background:rgba(255,255,255,.2);color:#fff">● Open</span>'
+          : '<span class="badge badge-red" style="background:rgba(255,255,255,.2);color:#fff">✓ Filled</span>'}
+      </div>
+      <div class="detail-subject">${r.subject}</div>
+      <div class="detail-posted">Posted by ${r.name} · ${timeAgo(r.timestamp)}</div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-row">
+        <div class="detail-icon">🕐</div>
+        <div><div class="detail-label">Availability</div><div class="detail-value">${r.availability}</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon">👥</div>
+        <div><div class="detail-label">Study Style</div><div class="detail-value">${r.studyStyle}</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon">📍</div>
+        <div><div class="detail-label">Location</div><div class="detail-value">${r.location}</div></div>
+      </div>
+      ${r.notes ? `
+      <div class="detail-row">
+        <div class="detail-icon">📝</div>
+        <div><div class="detail-label">Notes</div><div class="detail-value">${r.notes}</div></div>
+      </div>` : ''}
+      <div class="detail-row">
+        <div class="detail-icon">✉️</div>
+        <div><div class="detail-label">Contact</div><div class="detail-value">${r.email}</div></div>
+      </div>
+    </div>
+    ${r.status === 'Open' && !isOwner ? `
+    <div style="padding:0 16px 16px">
+      <button class="btn btn-accent btn-full" onclick="openJoinModal()">Join This Study Group 🙋</button>
+    </div>` : ''}
+    ${isOwner && r.status === 'Open' ? `
+    <div style="padding:0 16px 16px">
+      <button class="btn btn-success btn-full" onclick="markFilled('${r.id}')">✓ Mark as Filled</button>
+    </div>` : ''}
+    <div class="responses-section">
+      <h3>💬 Responses (${responses.length})</h3>
+      ${responsesHtml}
+    </div>
+    <div style="padding:0 16px 16px">
+      <button class="btn btn-outline btn-full" onclick="switchScreen('browse')">← Back to Browse</button>
+    </div>`;
+
+  switchScreenRaw('detail');
+}
+
+function switchScreenRaw(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ── POST REQUEST ──────────────────────────────────────────────────────────────
+function submitRequest() {
+  const user = getCurrentUser();
+  if (!user) { showToast('Please set up your profile first'); showUserSetup(); return; }
+  const subject = document.getElementById('fSubject').value.trim();
+  const avail   = document.getElementById('fAvailability').value.trim();
+  if (!subject || !avail) { showToast('Subject and availability are required'); return; }
+
+  const newReq = {
+    id:           'r' + Date.now(),
+    name:         user.name,
+    email:        user.email,
+    subject,
+    availability: avail,
+    studyStyle:   document.getElementById('fStyle').value,
+    location:     document.getElementById('fLocation').value,
+    notes:        document.getElementById('fNotes').value.trim(),
+    status:       'Open',
+    timestamp:    Date.now(),
+  };
+  const reqs = getRequests();
+  reqs.unshift(newReq);
+  setRequests(reqs);
+  // Reset form
+  ['fSubject','fAvailability','fNotes'].forEach(id => document.getElementById(id).value = '');
+  showToast('Request posted! 🎉');
+  switchScreen('mine');
+}
+
+// ── JOIN ──────────────────────────────────────────────────────────────────────
+function openJoinModal() {
+  const user = getCurrentUser();
+  if (!user) { showToast('Please set up your profile first'); showUserSetup(); return; }
+  document.getElementById('joinModal').classList.remove('hidden');
+}
+function closeModal() {
+  document.getElementById('joinModal').classList.add('hidden');
+}
+function submitJoin() {
+  const user = getCurrentUser();
+  const msg  = document.getElementById('joinMessage').value.trim();
+  if (!msg) { showToast('Please write a message'); return; }
+  const resp = {
+    id:            'resp' + Date.now(),
+    requestId:     currentDetailId,
+    responderName: user.name,
+    responderEmail:user.email,
+    message:       msg,
+    timestamp:     Date.now(),
+  };
+  const responses = getResponses();
+  responses.push(resp);
+  setResponses(responses);
+  document.getElementById('joinMessage').value = '';
+  closeModal();
+  showToast('Response sent! The poster will see your message. 📩');
+  showDetail(currentDetailId);
+}
+
+// ── MARK FILLED / DELETE ──────────────────────────────────────────────────────
+function markFilled(id) {
+  const reqs = getRequests();
+  const r = reqs.find(x => x.id === id);
+  if (r) r.status = 'Filled';
+  setRequests(reqs);
+  showToast('Marked as filled ✓');
+  renderMine();
+  renderHome();
+}
+function deleteRequest(id) {
+  const reqs = getRequests().filter(x => x.id !== id);
+  setRequests(reqs);
+  showToast('Request deleted');
+  renderMine();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function timeAgo(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60)   return 'Just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400)return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function renderAll() { renderHome(); }
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+const user = getCurrentUser();
+if (user) {
+  document.getElementById('userSetup').classList.add('hidden');
+  document.getElementById('userPill').textContent = '👤 ' + user.name.split(' ')[0];
+}
+renderAll();
+</script>
+</body>
+</html>
