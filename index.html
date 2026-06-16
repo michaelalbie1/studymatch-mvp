@@ -772,28 +772,33 @@ let sortMode           = 'recent';
 //   • Location match     — 30 pts  (exact match or either side is "Flexible")
 //   • Study style match  — 20 pts  (exact match or either side is "Either")
 function calcMatchScore(req, user) {
-  if (!user || !user.subjects) return null;
+  if (!user) return null;
+  // Need at least one preference set to compute a meaningful score
+  const hasPrefs = user.subjects || user.prefLocation || user.prefStyle;
+  if (!hasPrefs) return null;
 
   let score = 0;
 
   // ── SUBJECT RELEVANCE (50 pts) ────────────────────────────────────────────
   // Tokenize both strings and look for any word overlap (min 3 chars)
-  const userTokens = user.subjects.toLowerCase().split(/[\s,;]+/).filter(t => t.length >= 3);
-  const reqTokens  = req.subject.toLowerCase().split(/[\s,()/]+/).filter(t => t.length >= 3);
-  const hasOverlap = userTokens.some(ut =>
-    reqTokens.some(rt => rt.includes(ut) || ut.includes(rt))
-  );
-  if (hasOverlap) score += 50;
+  if (user.subjects) {
+    const userTokens = user.subjects.toLowerCase().split(/[\s,;]+/).filter(t => t.length >= 3);
+    const reqTokens  = req.subject.toLowerCase().split(/[\s,()/]+/).filter(t => t.length >= 3);
+    const hasOverlap = userTokens.some(ut =>
+      reqTokens.some(rt => rt.includes(ut) || ut.includes(rt))
+    );
+    if (hasOverlap) score += 50;
+  }
 
   // ── LOCATION MATCH (30 pts) ───────────────────────────────────────────────
   const userLoc = user.prefLocation || '';
-  if (userLoc === req.location || userLoc === 'Flexible' || req.location === 'Flexible') {
+  if (userLoc && (userLoc === req.location || userLoc === 'Flexible' || req.location === 'Flexible')) {
     score += 30;
   }
 
   // ── STUDY STYLE MATCH (20 pts) ────────────────────────────────────────────
   const userStyle = user.prefStyle || '';
-  if (userStyle === req.studyStyle || userStyle === 'Either' || req.studyStyle === 'Either') {
+  if (userStyle && (userStyle === req.studyStyle || userStyle === 'Either' || req.studyStyle === 'Either')) {
     score += 20;
   }
 
@@ -1218,8 +1223,17 @@ function renderAll() { renderHome(); }
 // ── INIT ──────────────────────────────────────────────────────────────────────
 const user = getCurrentUser();
 if (user) {
-  document.getElementById('userSetup').classList.add('hidden');
-  document.getElementById('userPill').textContent = '👤 ' + user.name.split(' ')[0];
+  const isOldProfile = user.subjects === undefined && user.prefLocation === undefined;
+  if (isOldProfile) {
+    // Returning user from Assignment 2 — pre-fill name/email, ask for new preferences
+    document.getElementById('setupName').value  = user.name;
+    document.getElementById('setupEmail').value = user.email;
+    // Show setup so user fills in the new preference fields
+    document.getElementById('userSetup').classList.remove('hidden');
+  } else {
+    document.getElementById('userSetup').classList.add('hidden');
+    document.getElementById('userPill').textContent = '👤 ' + user.name.split(' ')[0];
+  }
 }
 renderAll();
 </script>
