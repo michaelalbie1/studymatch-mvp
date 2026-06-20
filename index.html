@@ -483,6 +483,44 @@
     }
     .setup-label { font-size: 12px; font-weight: 700; opacity: .7; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 8px; width: 100%; }
 
+    /* ── CUSTOM AUTOCOMPLETE ── */
+    .autocomplete-wrap { position: relative; }
+    .ac-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--card);
+      border: 1.5px solid var(--primary);
+      border-radius: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 50;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+    .ac-list.hidden { display: none; }
+    .ac-item {
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover { background: rgba(0,48,135,.06); }
+    .ac-item mark { background: rgba(201,168,76,.35); color: var(--text); font-weight: 700; border-radius: 2px; font-style: normal; }
+    .ai-computing {
+      margin: 0 16px 8px;
+      background: linear-gradient(135deg, rgba(0,48,135,.06) 0%, rgba(201,168,76,.08) 100%);
+      border: 1px dashed rgba(0,48,135,.25);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 600;
+      display: none;
+    }
+    .ai-computing.show { display: block; }
+
     /* ── MISC ── */
     .divider { height: 1px; background: var(--border); margin: 4px 16px; }
     .no-results { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
@@ -606,6 +644,7 @@
     <button class="sort-btn active" id="sortRecent" onclick="setSortMode('recent')">🕐 Recent</button>
     <button class="sort-btn" id="sortMatch"  onclick="setSortMode('match')">🎯 Best Match</button>
   </div>
+  <div class="ai-computing" id="aiComputingBanner">🤖 AI is computing your match scores…</div>
   <div id="browseList"></div>
 </div>
 
@@ -618,34 +657,12 @@
   <div class="form-wrap">
     <div class="form-group">
       <label>Subject / Course <span class="req">*</span></label>
-      <input class="form-control" id="fSubject" list="subjectList" placeholder="e.g. Statistics, OOP, Marketing…" />
-      <datalist id="subjectList">
-        <option value="Statistics">
-        <option value="Calculus I">
-        <option value="Calculus II">
-        <option value="Linear Algebra">
-        <option value="Data Structures">
-        <option value="OOP (Java)">
-        <option value="Web Development">
-        <option value="Database Systems">
-        <option value="Machine Learning">
-        <option value="Algorithms">
-        <option value="Computer Networks">
-        <option value="Operating Systems">
-        <option value="Marketing Strategy">
-        <option value="Digital Marketing">
-        <option value="Brand Management">
-        <option value="Business Law">
-        <option value="Financial Accounting">
-        <option value="Corporate Finance">
-        <option value="Microeconomics">
-        <option value="Macroeconomics">
-        <option value="Entrepreneurship">
-        <option value="Business Strategy">
-        <option value="Organizational Behavior">
-        <option value="International Business">
-        <option value="Operations Management">
-      </datalist>
+      <div class="autocomplete-wrap" id="subjectWrap">
+        <input class="form-control" id="fSubject" autocomplete="off"
+          placeholder="Type to search Reichman courses…"
+          oninput="acFilter()" onfocus="acFilter()" />
+        <div class="ac-list hidden" id="acList"></div>
+      </div>
     </div>
     <div class="form-group">
       <label>Availability <span class="req">*</span></label>
@@ -765,51 +782,131 @@ let currentDetailId    = null;
 let activeLocationFilter = 'All';
 let sortMode           = 'recent';
 
+// ── SUBJECT AUTOCOMPLETE ──────────────────────────────────────────────────────
+const SUBJECTS = [
+  'Statistics','Calculus I','Calculus II','Linear Algebra','Data Structures',
+  'OOP (Java)','Web Development','Database Systems','Machine Learning','Algorithms',
+  'Computer Networks','Operating Systems','Marketing Strategy','Digital Marketing',
+  'Brand Management','Business Law','Financial Accounting','Corporate Finance',
+  'Microeconomics','Macroeconomics','Entrepreneurship','Business Strategy',
+  'Organizational Behavior','International Business','Operations Management'
+];
+
+function acFilter() {
+  const q    = (document.getElementById('fSubject').value || '').toLowerCase();
+  const list = document.getElementById('acList');
+  const hits = q ? SUBJECTS.filter(s => s.toLowerCase().includes(q)) : SUBJECTS;
+  if (!hits.length) { list.classList.add('hidden'); return; }
+  list.innerHTML = hits.map(s => {
+    const i = s.toLowerCase().indexOf(q);
+    const hi = (q && i >= 0)
+      ? s.slice(0,i) + '<mark>' + s.slice(i, i+q.length) + '</mark>' + s.slice(i+q.length)
+      : s;
+    return `<div class="ac-item" onmousedown="acSelect('${s}')">${hi}</div>`;
+  }).join('');
+  list.classList.remove('hidden');
+}
+function acSelect(val) {
+  document.getElementById('fSubject').value = val;
+  document.getElementById('acList').classList.add('hidden');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#subjectWrap'))
+    document.getElementById('acList')?.classList.add('hidden');
+});
+
+// ── AI SEMANTIC SUBJECT MATCHING ──────────────────────────────────────────────
+// Uses the HuggingFace Inference API (sentence-transformers/all-MiniLM-L6-v2)
+// to compute semantic similarity between the user's subjects and each request's
+// subject. Falls back to keyword overlap if the API is unavailable.
+const HF_MODEL = 'https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2';
+
+async function fetchSemanticSimilarity(text1, text2) {
+  try {
+    const res = await fetch(HF_MODEL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs: { source_sentence: text1, sentences: [text2] } })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) ? data[0] : null;
+  } catch { return null; }
+}
+
+function keywordSubjectScore(userSubjects, reqSubject) {
+  const uTokens = userSubjects.toLowerCase().split(/[\s,;]+/).filter(t => t.length >= 3);
+  const rTokens = reqSubject.toLowerCase().split(/[\s,()/]+/).filter(t => t.length >= 3);
+  return uTokens.some(ut => rTokens.some(rt => rt.includes(ut) || ut.includes(rt))) ? 50 : 0;
+}
+
+function getAISubjectScore(userSubjects, reqSubject) {
+  const cache = loadData('sm_ai_scores', {});
+  const key   = `${userSubjects}||${reqSubject}`;
+  if (cache[key] !== undefined) return cache[key];
+  // AI score not yet computed — use keyword fallback until pre-computation finishes
+  return keywordSubjectScore(userSubjects, reqSubject);
+}
+
+async function precomputeAIScores(user) {
+  if (!user || !user.subjects) return;
+  const banner = document.getElementById('aiComputingBanner');
+  if (banner) banner.classList.add('show');
+
+  const requests = getRequests();
+  const cache    = loadData('sm_ai_scores', {});
+  let updated    = false;
+
+  for (const r of requests) {
+    const key = `${user.subjects}||${r.subject}`;
+    if (cache[key] !== undefined) continue;
+    const sim = await fetchSemanticSimilarity(user.subjects, r.subject);
+    cache[key] = sim !== null
+      ? Math.round(sim * 50)          // AI score (0-50)
+      : keywordSubjectScore(user.subjects, r.subject); // fallback
+    updated = true;
+  }
+
+  if (updated) saveData('sm_ai_scores', cache);
+  if (banner) banner.classList.remove('show');
+  renderBrowse(); // re-render with real AI scores
+}
+
 // ── SMART MATCH SCORE ALGORITHM ───────────────────────────────────────────────
-// Computes a 0-100 compatibility score between a study request and the current
-// user's preferences. Three weighted criteria:
-//   • Subject relevance  — 50 pts  (keyword overlap using tokenization)
-//   • Location match     — 30 pts  (exact match or either side is "Flexible")
-//   • Study style match  — 20 pts  (exact match or either side is "Either")
+// Computes a 0-100 compatibility score. Three weighted criteria:
+//   • Subject semantic similarity — 50 pts  (AI: sentence-transformers via HuggingFace)
+//   • Location match             — 30 pts  (exact or "Flexible" on either side)
+//   • Study style match          — 20 pts  (exact or "Either" on either side)
 function calcMatchScore(req, user) {
   if (!user) return null;
-  // Need at least one preference set to compute a meaningful score
   const hasPrefs = user.subjects || user.prefLocation || user.prefStyle;
   if (!hasPrefs) return null;
 
   let score = 0;
 
-  // ── SUBJECT RELEVANCE (50 pts) ────────────────────────────────────────────
-  // Tokenize both strings and look for any word overlap (min 3 chars)
-  if (user.subjects) {
-    const userTokens = user.subjects.toLowerCase().split(/[\s,;]+/).filter(t => t.length >= 3);
-    const reqTokens  = req.subject.toLowerCase().split(/[\s,()/]+/).filter(t => t.length >= 3);
-    const hasOverlap = userTokens.some(ut =>
-      reqTokens.some(rt => rt.includes(ut) || ut.includes(rt))
-    );
-    if (hasOverlap) score += 50;
-  }
+  // ── SUBJECT RELEVANCE (50 pts) — AI semantic similarity ──────────────────
+  if (user.subjects) score += getAISubjectScore(user.subjects, req.subject);
 
   // ── LOCATION MATCH (30 pts) ───────────────────────────────────────────────
   const userLoc = user.prefLocation || '';
-  if (userLoc && (userLoc === req.location || userLoc === 'Flexible' || req.location === 'Flexible')) {
+  if (userLoc && (userLoc === req.location || userLoc === 'Flexible' || req.location === 'Flexible'))
     score += 30;
-  }
 
   // ── STUDY STYLE MATCH (20 pts) ────────────────────────────────────────────
   const userStyle = user.prefStyle || '';
-  if (userStyle && (userStyle === req.studyStyle || userStyle === 'Either' || req.studyStyle === 'Either')) {
+  if (userStyle && (userStyle === req.studyStyle || userStyle === 'Either' || req.studyStyle === 'Either'))
     score += 20;
-  }
 
   return score;
 }
 
 function matchMeta(score) {
   if (score === null) return null;
-  if (score >= 80) return { label: '✨ Great Match', cls: 'badge-match-high', cardCls: 'match-high', panelCls: '', circleCls: '' };
-  if (score >= 50) return { label: '👍 Good Match',  cls: 'badge-match-mid',  cardCls: 'match-mid',  panelCls: 'mid', circleCls: 'mid' };
-  return             { label: '🔍 Low Match',    cls: 'badge-match-low',  cardCls: '',           panelCls: 'low', circleCls: 'low' };
+  const aiReady = Object.keys(loadData('sm_ai_scores', {})).length > 0;
+  const ai      = aiReady ? ' · 🤖 AI' : '';
+  if (score >= 80) return { label: `✨ Great Match ${score}%${ai}`, cls: 'badge-match-high', cardCls: 'match-high', panelCls: '',    circleCls: ''    };
+  if (score >= 50) return { label: `👍 Good Match ${score}%${ai}`,  cls: 'badge-match-mid',  cardCls: 'match-mid',  panelCls: 'mid', circleCls: 'mid' };
+  return             { label: `🔍 Low Match ${score}%${ai}`,    cls: 'badge-match-low',  cardCls: '',           panelCls: 'low', circleCls: 'low' };
 }
 
 // ── CALENDAR EXPORT ───────────────────────────────────────────────────────────
@@ -863,11 +960,16 @@ function setupUser() {
   const prefLoc  = document.getElementById('setupLocation').value;
   const prefStyle= document.getElementById('setupStyle').value;
   if (!name || !email) { showToast('Please enter your name and email'); return; }
-  setCurrentUser({ name, email, subjects, prefLocation: prefLoc, prefStyle });
+  const user = { name, email, subjects, prefLocation: prefLoc, prefStyle };
+  setCurrentUser(user);
+  // Clear cached AI scores when profile changes so they get re-computed
+  saveData('sm_ai_scores', {});
   document.getElementById('userSetup').classList.add('hidden');
   document.getElementById('userPill').textContent = '👤 ' + name.split(' ')[0];
   renderAll();
   showToast('Welcome, ' + name.split(' ')[0] + '! 🎉');
+  // Kick off async AI score pre-computation in background
+  precomputeAIScores(user);
 }
 function showUserSetup() {
   document.getElementById('userSetup').classList.remove('hidden');
